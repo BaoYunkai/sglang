@@ -18,6 +18,7 @@ from unittest import mock
 
 import torch
 
+from sglang.srt.disaggregation.decode import DecodePreallocQueue
 from sglang.srt.disaggregation.mode import DisaggregationMode
 from sglang.srt.disaggregation.utils import disagg_transfers_in_flight
 from sglang.srt.mem_cache.kv.alloc.band import Band
@@ -39,11 +40,12 @@ class _FakeTransferQueue:
         self.queue: List[object] = []
 
 
-class _FakePreallocQueue:
+class _FakePreallocQueue(DecodePreallocQueue):
     """Mirrors the real queue's published-destination bookkeeping."""
 
-    def __init__(self):
+    def __init__(self, transfer_queue):
         self._num_published_destinations = 0
+        self.transfer_queue = transfer_queue
 
     @property
     def has_published_destinations(self) -> bool:
@@ -65,7 +67,9 @@ class _FakeScheduler:
         self.disagg_prefill_transfer_queue: List[object] = []
         self.disagg_prefill_pending_chunk_rids: Set[str] = set()
         self.disagg_decode_transfer_queue = _FakeTransferQueue()
-        self.disagg_decode_prealloc_queue = _FakePreallocQueue()
+        self.disagg_decode_prealloc_queue = _FakePreallocQueue(
+            self.disagg_decode_transfer_queue
+        )
         self.decode_offload_manager = None
 
 
@@ -314,7 +318,9 @@ class TestUnifiedAllocatorsPublishTheTransferContract(CustomTestCase):
                 scheduler.disaggregation_mode = DisaggregationMode.DECODE
                 scheduler.disagg_prefill_transfer_queue = None
                 scheduler.disagg_decode_transfer_queue = _FakeTransferQueue()
-                scheduler.disagg_decode_prealloc_queue = _FakePreallocQueue()
+                scheduler.disagg_decode_prealloc_queue = _FakePreallocQueue(
+                    scheduler.disagg_decode_transfer_queue
+                )
                 check_pins(False)
                 scheduler.disagg_decode_transfer_queue.queue.append(
                     SimpleNamespace(host_staged=False)
