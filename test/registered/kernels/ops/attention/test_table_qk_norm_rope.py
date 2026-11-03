@@ -8,7 +8,7 @@ from sglang.kernels.ops.attention.table_qk_norm_rope import table_qk_norm_rope_
 from sglang.kernels.ops.layernorm.norm import fused_inplace_qknorm
 from sglang.test.ci.ci_register import register_cuda_ci
 
-register_cuda_ci(est_time=30, stage="base-b-kernel-unit", runner_config="1-gpu-large")
+register_cuda_ci(est_time=30, stage="base-b-kernel-unit", runner_config="1-gpu-small")
 register_cuda_ci(est_time=30, stage="base-b-kernel-unit", runner_config="4-gpu-b200")
 
 
